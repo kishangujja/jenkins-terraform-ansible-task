@@ -108,8 +108,6 @@ pipeline {
                 sh 'echo "Building on worker node"'
             }
         }
-    }
-}
 
         
         stage('Ansible Deployment') {
@@ -121,5 +119,6 @@ pipeline {
                 }
             }
         }
-    
+    }
+}
 

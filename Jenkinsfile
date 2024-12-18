@@ -7,7 +7,8 @@ pipeline {
         SH_KEY_NAME = "jenkins_rsa"
         SSH_KEY_PATH = "${env.WORKSPACE}/.ssh/${SH_KEY_NAME}"
         SSH_PUBLIC_KEY_PATH = "${env.WORKSPACE}/.ssh/${SH_KEY_NAME}.pub"
-        INVENTORY_FILE = "${env.WORKSPACE}/jenkins-terraform-ansible-task/inventory.yaml"  // Path to your YAML inventory file
+        INVENTORY_FILE = "${env.WORKSPACE}/inventory.yaml"  // Corrected path to inventory.yaml
+        
     }
 
     stages {
@@ -16,7 +17,7 @@ pipeline {
             steps {
                 deleteDir()
                 echo 'Cloning repository...'
-                sh 'git clone https://github.com/kishangujja/jenkins-terraform-ansible-task.git' 
+                sh 'git clone https://github.com/kishangujja/jenkins-terraform-ansible-task.git'
             }
         }
 
@@ -50,10 +51,26 @@ pipeline {
         stage('Load Inventory and Get Worker Node') {
             steps {
                 script {
+                    // Debugging: Read file content and echo it
+                    def yamlContent = readFile("${INVENTORY_FILE}")
+                    echo "YAML Content: ${yamlContent}"  // Logs the content of the YAML file
+
+                    // Load YAML content into a Groovy object
                     def inventory = readYaml file: "${INVENTORY_FILE}"
-                    def workerNode = inventory.workers[0]
+                    
+                    // Check if the group exists in the inventory
+                    def workerGroup = inventory[WORKER_GROUP]
+                    if (!workerGroup) {
+                        error "Worker group '${WORKER_GROUP}' not found in the inventory"
+                    }
+
+                    // Pick the first worker node in the group
+                    def workerNode = workerGroup[0]  // Use the first worker node in the selected group
+
+                    // Extract worker node details
                     WORKER_NODE_IP = workerNode.ip
                     WORKER_NODE_USER = workerNode.user
+
                     echo "Using worker node IP: ${WORKER_NODE_IP}, User: ${WORKER_NODE_USER}"
                 }
             }
@@ -63,6 +80,7 @@ pipeline {
             steps {
                 script {
                     sh """
+                        # Ensure passwordless SSH access to worker node
                         ssh -o StrictHostKeyChecking=no ${WORKER_NODE_USER}@${WORKER_NODE_IP} 'mkdir -p ~/.ssh && chmod 700 ~/.ssh'
                         ssh -o StrictHostKeyChecking=no ${WORKER_NODE_USER}@${WORKER_NODE_IP} 'echo ${WORKER_NODE_PUBLIC_KEY} >> ~/.ssh/authorized_keys'
                         ssh -o StrictHostKeyChecking=no ${WORKER_NODE_USER}@${WORKER_NODE_IP} 'chmod 600 ~/.ssh/authorized_keys'
@@ -101,7 +119,7 @@ pipeline {
                         disableHostKeyChecking: true,
                         installation: 'ansible',
                         inventory: "${INVENTORY_FILE}",
-                        playbook: "${env.WORKSPACE}/jenkins-terraform-ansible-task/amazon-playbook.yml"
+                        playbook: "${env.WORKSPACE}/amazon-playbook.yml"  // Corrected path to amazon-playbook.yml
                     )
 
                     // Second Ansible playbook deployment (Ubuntu-based)
@@ -111,7 +129,7 @@ pipeline {
                         disableHostKeyChecking: true,
                         installation: 'ansible',
                         inventory: "${INVENTORY_FILE}",
-                        playbook: "${env.WORKSPACE}/jenkins-terraform-ansible-task/ubuntu-playbook.yml"
+                        playbook: "${env.WORKSPACE}/ubuntu-playbook.yml"  // Corrected path to ubuntu-playbook.yml
                     )
                 }
             }

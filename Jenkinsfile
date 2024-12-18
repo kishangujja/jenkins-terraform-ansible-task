@@ -7,7 +7,7 @@ pipeline {
         SH_KEY_NAME = "jenkins_rsa"
         SSH_KEY_PATH = "${env.WORKSPACE}/.ssh/${SH_KEY_NAME}"
         SSH_PUBLIC_KEY_PATH = "${env.WORKSPACE}/.ssh/${SH_KEY_NAME}.pub"
-        INVENTORY_FILE = "${env.WORKSPACE}/inventory.yaml"  // Adjust path based on actual location
+        INVENTORY_FILE = "$/var/lib/jenkins/workspace/ansible-terraform-jenkins/jenkins-terraform-ansible-task/inventory.yaml"  // Adjust path based on actual location
         WORKER_GROUP = "frontend"  // Set to either 'frontend' or 'backend', adjust as needed
         
     }

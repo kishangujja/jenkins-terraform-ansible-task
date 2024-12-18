@@ -52,7 +52,7 @@ pipeline {
             steps {
                 script {
                     // Load the inventory YAML file and parse it to get the worker node info
-                    def inventory = readYaml file: inventory.yaml
+                    def inventory = readYaml file: /var/lib/jenkins/workspace/ansible-terraform-jenkins/jenkins-terraform-ansible-task/inventory.yaml
                     
                     // Pick the first worker node (can be customized as per your needs)
                     def workerNode = inventory.workers[0]  // You can loop through or choose a different worker node

@@ -9,6 +9,7 @@ pipeline {
         SSH_PUBLIC_KEY_PATH = "${env.WORKSPACE}/.ssh/${SH_KEY_NAME}.pub"
         INVENTORY_FILE = "${env.WORKSPACE}/inventory.yaml"  // Adjust path based on actual location
         WORKER_GROUP = "frontend"  // Set to either 'frontend' or 'backend', adjust as needed
+        WORKSPACE = '/var/lib/jenkins/workspace'
     }
 
     stages {

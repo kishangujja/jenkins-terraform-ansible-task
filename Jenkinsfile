@@ -5,7 +5,6 @@ pipeline {
         AWS_ACCESS_KEY_ID = credentials('aws')  // ID from Jenkins credentials store
         AWS_SECRET_ACCESS_KEY = credentials('aws')  // ID from Jenkins credentials store
         SH_KEY_NAME = "jenkins_rsa"
-        WORKSPACE = "/var/lib/jenkins/workspace"
         SSH_KEY_PATH = "${env.WORKSPACE}/.ssh/${SH_KEY_NAME}"
         SSH_PUBLIC_KEY_PATH = "${env.WORKSPACE}/.ssh/${SH_KEY_NAME}.pub"
         INVENTORY_FILE = "${env.WORKSPACE}/inventory.yaml"  // Adjust path based on actual location

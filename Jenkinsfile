@@ -8,7 +8,7 @@ pipeline {
         SSH_KEY_PATH = "${env.WORKSPACE}/.ssh/${SH_KEY_NAME}"
         SSH_PUBLIC_KEY_PATH = "${env.WORKSPACE}/.ssh/${SH_KEY_NAME}.pub"
         INVENTORY_FILE = "/var/lib/jenkins/workspace/ansible-terraform-jenkins/jenkins-terraform-ansible-task/inventory.yaml"  // Adjust path based on actual location
-        
+        WORKER_GROUP = "frontend"  // You can change this to backend depending on your requirement
     }
 
     stages {
@@ -54,11 +54,17 @@ pipeline {
             steps {
                 script {
                     echo "Inventory file path: ${INVENTORY_FILE}"  // Debugging: Check the file path
-                    def inventory = readYaml file: "${INVENTORY_FILE}"
+
+                    // Ensure the inventory file exists before proceeding
+                    if (!fileExists(INVENTORY_FILE)) {
+                        error "Inventory file does not exist at path: ${INVENTORY_FILE}. Please ensure the path is correct."
+                    }
+
+                    def inventory = readYaml file: INVENTORY_FILE
                     
                     // Debugging: Print the loaded inventory content
                     echo "Loaded inventory: ${inventory}"
-                    
+
                     // Load the correct worker group (frontend or backend)
                     def workerGroup = inventory[WORKER_GROUP]
                     if (!workerGroup) {
@@ -110,21 +116,33 @@ pipeline {
             }
         }
 
-        stage('Build on Worker Node') {
-            agent { label 'worker-node' }  // Replace with your worker node label if necessary
-            steps {
-                echo "Running the build on the worker node..."
-                // Add your build steps here, for example:
-                sh 'echo "Building on worker node"'
-            }
-        }
-
         stage('Ansible Deployment') {
             steps {
                 script {
+                   // Only run the playbook if inventory is available and the worker node details are successfully loaded
                    sleep '30'
-                   ansiblePlaybook becomeUser: 'ec2-user', credentialsId: 'aws', disableHostKeyChecking: true, installation: 'ansible', inventory: '/var/lib/jenkins/workspace/ansible-terraform-jenkins/jenkins-terraform-ansible-task/inventory.yaml', playbook: '/var/lib/jenkins/workspace/ansible-terraform-jenkins/jenkins-terraform-ansible-task/amazon-playbook.yml', vaultTmpPath: ''
-                   ansiblePlaybook become: true, credentialsId: 'aws', disableHostKeyChecking: true, installation: 'ansible', inventory: '/var/lib/jenkins/workspace/ansible-terraform-jenkins/jenkins-terraform-ansible-task/inventory.yaml', playbook: '/var/lib/jenkins/workspace/ansible-terraform-jenkins/jenkins-terraform-ansible-task/ubuntu-playbook.yml', vaultTmpPath: ''
+
+                   echo "Running Ansible playbook for Amazon..."
+                   ansiblePlaybook(
+                       becomeUser: 'ec2-user',
+                       credentialsId: 'aws',
+                       disableHostKeyChecking: true,
+                       installation: 'ansible',
+                       inventory: INVENTORY_FILE,
+                       playbook: "${env.WORKSPACE}/jenkins-terraform-ansible-task/amazon-playbook.yml",
+                       vaultTmpPath: ''
+                   )
+
+                   echo "Running Ansible playbook for Ubuntu..."
+                   ansiblePlaybook(
+                       become: true,
+                       credentialsId: 'aws',
+                       disableHostKeyChecking: true,
+                       installation: 'ansible',
+                       inventory: INVENTORY_FILE,
+                       playbook: "${env.WORKSPACE}/jenkins-terraform-ansible-task/ubuntu-playbook.yml",
+                       vaultTmpPath: ''
+                   )
                 }
             }
         }
